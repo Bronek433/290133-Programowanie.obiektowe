@@ -1,0 +1,212 @@
+#include <iostream>
+#include <string>
+#include <cctype>
+
+using namespace std;
+
+
+bool czy_same_cyfry(string tekst) {
+    for (char c : tekst) if (!isdigit(c)) return false;
+    return (tekst.length() > 0);
+}
+
+bool czy_same_litery(string tekst) {
+    for (char c : tekst) if (!isalpha(c)) return false;
+    return (tekst.length() > 0);
+}
+
+
+class Osoba {
+private:
+    string imie;
+    string nazwisko;
+    int indeks;
+
+public:
+    Osoba() : imie(""), nazwisko(""), indeks(0) {}
+
+    bool ustaw_imie(string nowe_imie) {
+        if (nowe_imie.length() < 3) {
+            cout << "imie za krotkie\n";
+            return false;
+        }
+
+        if (!czy_same_litery(nowe_imie)) {
+            cout << "imie musi zawierac same litery\n";
+            return false;
+        }
+
+        imie = nowe_imie;
+        return true;
+    }
+
+    bool ustaw_nazwisko(string nowe_nazwisko) {
+        if (nowe_nazwisko.length() < 3) {
+            cout << "nazwisko za krotkie\n";
+            return false;
+        }
+
+        if (!czy_same_litery(nowe_nazwisko)) {
+            cout << "nazwisko musi zawierac same litery\n";
+            return false;
+        }
+
+        nazwisko = nowe_nazwisko;
+        return true;
+    }
+
+    bool ustaw_indeks(int nowy_indeks) {
+        if (nowy_indeks < 1000000 || nowy_indeks > 9999999) {
+            cout << "indeks musi miec 7 cyfr\n";
+            return false;
+        }
+
+        indeks = nowy_indeks;
+        return true;
+    }
+
+    bool ustaw_dane(string i, string n, int ind) {
+        if (!ustaw_imie(i)) return false;
+        if (!ustaw_nazwisko(n)) return false;
+        if (!ustaw_indeks(ind)) return false;
+        return true;
+    }
+
+    string pobierz_imie() { return imie; }
+    string pobierz_nazwisko() { return nazwisko; }
+    int pobierz_indeks() { return indeks; }
+};
+
+
+class ListaObecnosci {
+private:
+    Osoba **tabOsob;
+    bool *czyObecny;
+    int iloscOsob;
+    int maxOsob;
+
+public:
+    ListaObecnosci() : tabOsob(nullptr), czyObecny(nullptr), iloscOsob(0), maxOsob(10) {
+        tabOsob = new Osoba*[maxOsob];
+        czyObecny = new bool[maxOsob];
+    }
+
+    void dodajOsobe(Osoba *os) {
+        if (iloscOsob < maxOsob) {
+            tabOsob[iloscOsob] = os;
+            czyObecny[iloscOsob] = false;
+            iloscOsob++;
+        }
+    }
+
+    void ustawObecnosc(int nrIndeksu, bool stan) {
+        for (int i = 0; i < iloscOsob; i++) {
+            if (tabOsob[i]->pobierz_indeks() == nrIndeksu) {
+                czyObecny[i] = stan;
+                return;
+            }
+        }
+    }
+
+    void drukujListe() {
+        if (iloscOsob == 0) {
+            cout << "Lista jest pusta.\n";
+            return;
+        }
+
+        for (int i = 0; i < iloscOsob; i++) {
+            cout << tabOsob[i]->pobierz_imie() << " "
+                 << tabOsob[i]->pobierz_nazwisko()
+                 << " [" << tabOsob[i]->pobierz_indeks() << "] - "
+                 << (czyObecny[i] ? "OBECNY" : "nieobecny") << endl;
+        }
+    }
+};
+
+
+class InterfejsUzytkownika {
+private:
+    Osoba *bazaOsob;
+    int &licznikOsob;
+    ListaObecnosci *tablicaList;
+    int iloscList;
+
+    void dodajOsobeDoBazy() {
+        string i, n;
+        int ind;
+
+        cout << "Podaj imie, nazwisko i indeks: ";
+        cin >> i >> n >> ind;
+
+        if (bazaOsob[licznikOsob].ustaw_dane(i, n, ind)) {
+            licznikOsob++;
+            cout << "Dodano osobe do bazy.\n";
+        }
+    }
+
+    void dodajOsobeDoListy() {
+        int nrInd, nrListy;
+        cout << "Do ktorej listy (0-1) dodac osobe? ";
+        cin >> nrListy;
+        cout << "Podaj indeks osoby z bazy: ";
+        cin >> nrInd;
+
+        for (int i = 0; i < licznikOsob; i++) {
+            if (bazaOsob[i].pobierz_indeks() == nrInd) {
+                tablicaList[nrListy].dodajOsobe(&bazaOsob[i]);
+                return;
+            }
+        }
+
+        cout << "Nie znaleziono osoby o takim indeksie!\n";
+    }
+
+public:
+    InterfejsUzytkownika(Osoba *tO, int &lO, ListaObecnosci *tL, int iL)
+        : bazaOsob(tO), licznikOsob(lO), tablicaList(tL), iloscList(iL) {}
+
+    void loop() {
+        int wybor;
+        do {
+            cout << "\n--- MENU ---\n";
+            cout << "1. Dodaj osobe do bazy\n2. Wyswietl liste\n3. Dodaj osobe do listy\n";
+            cout << "4. Ustaw obecnosc\n5. Koniec\nWybor: ";
+            cin >> wybor;
+
+            switch (wybor) {
+                case 1:
+                    dodajOsobeDoBazy();
+                    break;
+                case 2: {
+                    int n;
+                    cout << "Numer listy (0-1): ";
+                    cin >> n;
+                    tablicaList[n].drukujListe();
+                    break;
+                }
+                case 3:
+                    dodajOsobeDoListy();
+                    break;
+                case 4: {
+                    int n, ind, st;
+                    cout << "Nr listy, indeks osoby i stan (1/0): ";
+                    cin >> n >> ind >> st;
+                    tablicaList[n].ustawObecnosc(ind, st);
+                    break;
+                }
+            }
+        } while (wybor != 5);
+    }
+};
+
+
+int main() {
+    Osoba tablicaOsob[10];
+    int aktualnaIloscOsob = 0;
+    ListaObecnosci tablicaList[2];
+
+    InterfejsUzytkownika ui(tablicaOsob, aktualnaIloscOsob, tablicaList, 2);
+    ui.loop();
+
+    return 0;
+}
